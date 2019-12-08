@@ -1,0 +1,11 @@
+server:
+  #Æô¶¯¶Ë¿Ú
+  port: 8088
+
+logging:
+  level:
+    root: info
+  file: logs/marketing.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger- %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm} [%thread] %-5level %logger- %msg%n"
