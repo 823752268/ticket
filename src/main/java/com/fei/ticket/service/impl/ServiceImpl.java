@@ -18,6 +18,7 @@ import sun.plugin2.os.windows.Windows;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,33 +38,48 @@ public class ServiceImpl implements IService {
     static String repatToken="";
     static JSONObject jsonObject;
 
+
     @Override
     public BaseResponse<List<String>> getList() {
         BaseResponse<List<String>> baseResponse=new BaseResponse<>();
         String uri="https://kyfw.12306.cn/otn/leftTicket/query?leftTicketDTO.train_date=2019-12-13&leftTicketDTO.from_station=HZH&leftTicketDTO.to_station=AOH&purpose_codes=ADULT";
 
-        String s= HttpUtil.get(uri);
-        if(s!=null){
-            JSONObject jsonObject = JSONObject.parseObject(s);
-            JSONObject data = jsonObject.getJSONObject("data");
-            JSONArray jsonArray = data.getJSONArray("result");
-            List<String> list = jsonArray.toJavaList(String.class);
-            baseResponse.setData(list);
-            String valueStr = list.stream().filter(o -> {
-                String[] arr = o.split("\\|");
-                if (arr[3].equals("G7504")) {
-                    return true;
-                }
-                return false;
-            }).findFirst().get();
-            submitOrder(valueStr);
-            getDoc();
-            getUser();
-            checkOrderInfo(null);
-            getQueueCount();
-            return baseResponse;
+
+        List<String> list=new ArrayList<>();
+        while(true){
+            String s= HttpUtil.get(uri);
+            if(s!=null){
+                JSONObject jsonObject = JSONObject.parseObject(s);
+                JSONObject data = jsonObject.getJSONObject("data");
+                JSONArray jsonArray = data.getJSONArray("result");
+                list = jsonArray.toJavaList(String.class);
+
+            }
+            if(list.size()>0){
+                break;
+            }
+            try {
+                Thread.sleep(5000);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
         }
-       return null;
+
+        baseResponse.setData(list);
+        String valueStr = list.stream().filter(o -> {
+            String[] arr = o.split("\\|");
+            if (arr[3].equals("G7504")) {
+                return true;
+            }
+            return false;
+        }).findFirst().get();
+        submitOrder(valueStr);
+        getDoc();
+        getUser();
+        checkOrderInfo(null);
+        getQueueCount();
+        confirm();
+        return baseResponse;
     }
 
     void submitOrder(String valueStr){
@@ -74,12 +90,12 @@ public class ServiceImpl implements IService {
             String decode = URLDecoder.decode(values[0], "UTF-8");
             map.put("secretStr",decode);
             map.put("train_date","2019-12-13");
-            map.put("back_train_date","2019-12-08");
+            map.put("back_train_date","2019-12-09");
             map.put("tour_flag","dc");
             map.put("purpose_codes","ADULT");
             map.put("query_from_station_name","杭州");
             map.put("query_to_station_name","上海");
-            map.put("undefined",null);
+//            map.put("undefined",null);
             String post = HttpUtil.post(url, map);
             System.out.println("提交订单结果+"+post);
         }catch (Exception e){
@@ -136,9 +152,9 @@ public class ServiceImpl implements IService {
         map.put("passengerTicketStr","O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827");
         map.put("oldPassengerStr","杨晓飞,1,4104***********011,1_");
         map.put("tour_flag","dc");
-        map.put("randCode",null);
+        map.put("randCode","");
         map.put("whatsSelect","1");
-        map.put("_json_att",null);
+        map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         String post = HttpUtil.post(url, map);
         System.out.println("检查订单信息返回信息为"+post);
@@ -153,10 +169,10 @@ public class ServiceImpl implements IService {
         map.put("seatType","O");
         map.put("fromStationTelecode","HGH");
         map.put("toStationTelecode","AOH");
-        map.put("leftTicket","gWD%2B2CLkL8HOlrPrnP4spw2plRKuwjyJq9dgcTF5P1FQHoszxM%2FHE69cpIY%3D");
+        map.put("leftTicket",jsonObject.getString("leftTicketStr"));
         map.put("purpose_codes","00");
         map.put("train_location","H3");
-        map.put("_json_att",null);
+        map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         String post = HttpUtil.post(url, map);
         System.out.println("获取排队结果为"+post);
@@ -167,20 +183,20 @@ public class ServiceImpl implements IService {
         Map<String,String> map=new HashMap<>();
         map.put("passengerTicketStr","O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827");
         map.put("oldPassengerStr","杨晓飞,1,4104***********011,1_");
-        map.put("randCode",null);
-        map.put("purpose_codes","O0");
-        map.put("key_check_isChange","53A0311CB0C59A17CB8254F53EFAB9D6FCCEB76E0CCFC6A46D3D7D24");
-        map.put("leftTicketStr","gWD%2B2CLkL8HOlrPrnP4spw2plRKuwjyJq9dgcTF5P1FQHoszxM%2FHE69cpIY%3D");
+        map.put("randCode","");
+        map.put("purpose_codes","00");
+        map.put("key_check_isChange",jsonObject.getString("key_check_isChange"));
+        map.put("leftTicketStr",jsonObject.getString("leftTicketStr"));
         map.put("train_location","H3");
-        map.put("choose_seats",null);
+        map.put("choose_seats","");
         map.put("seatDetailType","000");
         map.put("whatsSelect","1");
         map.put("roomType","00");
         map.put("dwAll","N");
-        map.put("_json_att",null);
+        map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         String post = HttpUtil.post(url, map);
-        System.out.println("获取排队结果为"+post);
+        System.out.println("提交订单结果为"+post);
     }
 
     @Override

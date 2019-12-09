@@ -1,7 +1,6 @@
 server:
-  #Æô¶¯¶Ë¿Ú
-  port: 8088
-
+  #å¯åŠ¨ç«¯å£
+  port: 9088
 logging:
   level:
     root: info
