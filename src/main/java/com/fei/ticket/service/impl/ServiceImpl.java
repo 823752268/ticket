@@ -37,6 +37,8 @@ public class ServiceImpl implements IService {
     static String checkOrderUrl="https://kyfw.12306.cn/otn/confirmPassenger/checkOrderInfo";
     static String getQueueCountUrl="https://kyfw.12306.cn/otn/confirmPassenger/getQueueCount";
     static String confirmUrl="https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue";
+    static String useInfo1="O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827";
+    static String useInfo2="杨晓飞,1,4104***********011,1_";
     static Map<String,String> ticketDetailMap=new HashMap<>();
     static String repatToken="";
     static JSONObject jsonObject;
@@ -171,8 +173,8 @@ public class ServiceImpl implements IService {
         Map<String,String> map=new HashMap<>();
         map.put("cancel_flag","2");
         map.put("bed_level_order_num","000000000000000000000000000000");
-        map.put("passengerTicketStr","O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827");
-        map.put("oldPassengerStr","杨晓飞,1,4104***********011,1_");
+        map.put("passengerTicketStr",useInfo1);
+        map.put("oldPassengerStr",useInfo2);
         map.put("tour_flag","dc");
         map.put("randCode","");
         map.put("whatsSelect","1");
@@ -182,11 +184,7 @@ public class ServiceImpl implements IService {
         System.out.println("检查订单信息返回信息为"+post);
     }
 
-    public static void main(String[] args) {
-        while (true){
 
-        }
-    }
 
     void getQueueCount(){
         Map<String,String> map=new HashMap<>();
@@ -208,8 +206,8 @@ public class ServiceImpl implements IService {
 
     void confirm(){
         Map<String,String> map=new HashMap<>();
-        map.put("passengerTicketStr","O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827");
-        map.put("oldPassengerStr","杨晓飞,1,4104***********011,1_");
+        map.put("passengerTicketStr",useInfo1);
+        map.put("oldPassengerStr",useInfo2);
         map.put("randCode","");
         map.put("purpose_codes","00");
         map.put("key_check_isChange",jsonObject.getString("key_check_isChange"));
