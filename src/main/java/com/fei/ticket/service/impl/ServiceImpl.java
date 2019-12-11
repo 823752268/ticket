@@ -9,6 +9,7 @@ import com.fei.ticket.common.request.SubRequest;
 import com.fei.ticket.common.util.HttpUtil;
 import com.fei.ticket.common.util.StaUtil;
 import com.fei.ticket.service.IService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -30,6 +31,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ServiceImpl implements IService {
 
     static String subUrl="https://kyfw.12306.cn/otn/leftTicket/submitOrderRequest";
@@ -40,9 +42,11 @@ public class ServiceImpl implements IService {
     static String confirmUrl="https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue";
     static String useInfo1="O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827";
     static String useInfo2="杨晓飞,1,4104***********011,1_";
-    static Map<String,String> ticketDetailMap=new HashMap<>();
-    static String repatToken="";
-    static JSONObject jsonObject;
+    String who="";
+    Map<String,String> ticketDetailMap=new HashMap<>();
+    String repatToken="";
+    JSONObject jsonObject=null;
+    String[] detailArr=null;
 
 
     @Override
@@ -64,8 +68,18 @@ public class ServiceImpl implements IService {
 
     @Override
     public BaseResponse<String> sub1(SubRequest request) {
-        submitOrder(request);
-        getDoc();
+        detailArr= request.getDetailStr().split("\\|");
+        Boolean subFlag = submitOrder(request);
+        if(!subFlag){
+            return null;
+        }
+        Boolean docFlag = getDoc();
+        if(!docFlag){
+            return null;
+        }
+        if(StringUtils.isNotBlank(who)){
+            getUser();
+        }
         checkOrderInfo(null);
 //        getQueueCount();
         confirm();
@@ -108,12 +122,11 @@ public class ServiceImpl implements IService {
         confirm();
     }
 
-    void submitOrder(SubRequest request){
+    Boolean submitOrder(SubRequest request){
         try {
             LocalDate now = LocalDate.now();
-            String[] split = request.getDetailStr().split("\\|");
             Map<String,String> map=new HashMap<>();
-            String decode = URLDecoder.decode(split[0], "UTF-8");
+            String decode = URLDecoder.decode(detailArr[0], "UTF-8");
             map.put("secretStr",decode);
             map.put("train_date",request.getTrain_date_short());
             map.put("back_train_date",now.getYear()+"-"+now.getMonthValue()+"-"+now.getDayOfMonth()); //单程票 此为当前查询日期
@@ -122,13 +135,21 @@ public class ServiceImpl implements IService {
             map.put("query_from_station_name", request.getFromStationName());
             map.put("query_to_station_name",request.getToStationName());
             String post = HttpUtil.post(subUrl, map);
-            System.out.println("预提交订单结果+"+post);
+            if(StringUtils.isBlank(post)){
+                log.info("预提交订单失败:信息为空 cookie可能已过期或ip已被限制");
+                return false;
+            }
+            JSONObject jsonObject = JSONObject.parseObject(post);
+            Boolean status = jsonObject.getBoolean("status");
+            log.info("预提交订单结果为:{}",jsonObject.getString("messages"));
+            return status;
         }catch (Exception e){
             e.printStackTrace();
         }
+        return false;
     }
 
-    void getDoc(){
+    Boolean getDoc(){
 
         try {
             Map<String,String> map=new HashMap<>();
@@ -146,11 +167,16 @@ public class ServiceImpl implements IService {
                 String group = m2.group(1);
                 String replace = group.replace("'", "\"");
                 jsonObject = JSONObject.parseObject(replace);
-                System.out.println("PassengerForm获取成功");
+            }
+            if(StringUtils.isNotBlank(repatToken)){
+                log.info("获取doc成功");
+                return true;
             }
         }catch (Exception e){
             e.printStackTrace();
         }
+        log.info("获取doc失败");
+        return false;
     }
 
     void getUser(){
@@ -158,14 +184,20 @@ public class ServiceImpl implements IService {
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         String post = HttpUtil.post(getUserurl, map);
         JSONObject jsonObject = JSONObject.parseObject(post);
-        Object data = jsonObject.get("data");
         JSONArray jsonArray = jsonObject.getJSONObject("data").getJSONArray("normal_passengers");
         for (int i = 0; i < jsonArray.size(); i++) {
             JSONObject object = jsonArray.getJSONObject(i);
             String passenger_name = object.getString("passenger_name");
+            String passenger_id_no=object.getString("passenger_id_no");
+            String mobile_no=object.getString("mobile_no");
+            String allEncStr=object.getString("allEncStr");
+            if(passenger_name.equals(who)){
+                useInfo1="O,0,1,"+passenger_name+",1,"+passenger_id_no+","+mobile_no+",N,"+allEncStr;
+                useInfo2=passenger_name+",1,"+passenger_id_no+",1_";
+                break;
+            }
         }
-
-        System.out.println("获取乘客结果"+jsonArray);
+        log.info("获取客结果:{}",jsonArray.toString());
     }
 
     void checkOrderInfo(JSONObject user){
@@ -180,20 +212,12 @@ public class ServiceImpl implements IService {
         map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         try {
-            while (true){
-                String post = HttpUtil.post(checkOrderUrl, map);
-                if(StringUtils.isNotBlank(post)){
-                    Thread.sleep(500);
-                    System.out.println(post);
-                    JSONObject jsonObject = JSONObject.parseObject(post);
-                    Boolean aBoolean = jsonObject.getJSONObject("data").getBoolean("submitStatus");
-                    if(aBoolean==true){
-                        System.out.println("检查订单信息返回信息为"+post);
-                        break;
-                    }
-                }else{
-                    System.out.println("检查失败 休息3秒");
-                    Thread.sleep(3000);
+            String post = HttpUtil.post(checkOrderUrl, map);
+            if(StringUtils.isNotBlank(post)){
+                JSONObject jsonObject = JSONObject.parseObject(post);
+                Boolean aBoolean = jsonObject.getJSONObject("data").getBoolean("submitStatus");
+                if(aBoolean==true){
+                    log.info("检查订单信息为:{}",post);
                 }
             }
         }catch (Exception e){
@@ -225,10 +249,10 @@ public class ServiceImpl implements IService {
         map.put("passengerTicketStr",useInfo1);
         map.put("oldPassengerStr",useInfo2);
         map.put("randCode","");
-        map.put("purpose_codes","00");
+        map.put("purpose_codes",jsonObject.getString("purpose_codes"));
         map.put("key_check_isChange",jsonObject.getString("key_check_isChange"));
         map.put("leftTicketStr",jsonObject.getString("leftTicketStr"));
-        map.put("train_location","H3");
+        map.put("train_location",jsonObject.getString("train_location"));
         map.put("choose_seats","");
         map.put("seatDetailType","000");
         map.put("whatsSelect","1");
@@ -237,7 +261,7 @@ public class ServiceImpl implements IService {
         map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
         String post = HttpUtil.post(confirmUrl, map);
-        System.out.println("提交订单结果为"+post);
+        log.info("提交订单结果为:{}",post);
     }
 
 
