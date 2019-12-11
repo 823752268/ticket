@@ -34,9 +34,7 @@ import java.util.stream.Collectors;
 
 public class HttpUtil {
 
-    private static String cookie = "JSESSIONID=0C477099AC453B521FD92AA3B5C66E02; tk=XnXaJJbVXw_5DR8TGqv4sImqDGBCuWeIaFmkWzvtQ9JBgoI5ozl2l0; RAIL_EXPIRATION=1576160003967; RAIL_DEVICEID=VpViUQpCsHi3KlZ7WMprFTh8BaTfXodgFIjGdPoYR1ATO-ZmrCQh--uZx1-jHkLASHVoB26n4NxAxE8F5n5ZiYv3SDgcNObbYsN-me1Ro1Jk-0Ja6kNmAkkneCWQ6gj68Wiq1iQckOV29MZPWSED5fDAAlLU6RQz; _jc_save_showIns=true; BIGipServerpool_passport=351076874.50215.0000; route=6f50b51faa11b987e576cdb301e545c4; BIGipServerotn=1055916554.50210.0000; _jc_save_fromDate=2020-01-08; _jc_save_wfdc_flag=dc; _jc_save_toDate=2019-12-10; _jc_save_fromStation=%u676D%u5DDE%2CHZH; _jc_save_toStation=%u90D1%u5DDE%2CZZF";
-
-
+    private static String cookie = "JSESSIONID=2395FB3073BDC82288870FACB2F9DA5B; tk=cZclBY2R6oMn_nwUBUaOC--CLKUnufkJ67PXWwplj2j0; RAIL_EXPIRATION=1576160003967; RAIL_DEVICEID=VpViUQpCsHi3KlZ7WMprFTh8BaTfXodgFIjGdPoYR1ATO-ZmrCQh--uZx1-jHkLASHVoB26n4NxAxE8F5n5ZiYv3SDgcNObbYsN-me1Ro1Jk-0Ja6kNmAkkneCWQ6gj68Wiq1iQckOV29MZPWSED5fDAAlLU6RQz; _jc_save_wfdc_flag=dc; BIGipServerpool_passport=334299658.50215.0000; route=9036359bb8a8a461c164a04f8f50b252; BIGipServerotn=200278538.64545.0000; _jc_save_toDate=2019-12-11; _jc_save_fromStation=%u676D%u5DDE%2CHZH; _jc_save_toStation=%u90D1%u5DDE%2CZZF; _jc_save_fromDate=2020-01-09";
 
     public static String post(String url, Map<String, String> params) {
         // 获得Http客户端(可以理解为:你得先有一个浏览器;注意:实际上HttpClient与浏览器是不一样的)

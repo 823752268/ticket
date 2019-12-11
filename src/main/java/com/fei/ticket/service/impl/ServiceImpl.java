@@ -9,6 +9,7 @@ import com.fei.ticket.common.request.SubRequest;
 import com.fei.ticket.common.util.HttpUtil;
 import com.fei.ticket.common.util.StaUtil;
 import com.fei.ticket.service.IService;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -107,8 +108,6 @@ public class ServiceImpl implements IService {
         confirm();
     }
 
-
-
     void submitOrder(SubRequest request){
         try {
             LocalDate now = LocalDate.now();
@@ -180,10 +179,28 @@ public class ServiceImpl implements IService {
         map.put("whatsSelect","1");
         map.put("_json_att","");
         map.put("REPEAT_SUBMIT_TOKEN",repatToken);
-        String post = HttpUtil.post(checkOrderUrl, map);
-        System.out.println("检查订单信息返回信息为"+post);
-    }
+        try {
+            while (true){
+                String post = HttpUtil.post(checkOrderUrl, map);
+                if(StringUtils.isNotBlank(post)){
+                    Thread.sleep(500);
+                    System.out.println(post);
+                    JSONObject jsonObject = JSONObject.parseObject(post);
+                    Boolean aBoolean = jsonObject.getJSONObject("data").getBoolean("submitStatus");
+                    if(aBoolean==true){
+                        System.out.println("检查订单信息返回信息为"+post);
+                        break;
+                    }
+                }else{
+                    System.out.println("检查失败 休息3秒");
+                    Thread.sleep(3000);
+                }
+            }
+        }catch (Exception e){
 
+        }
+
+    }
 
 
     void getQueueCount(){
@@ -202,7 +219,6 @@ public class ServiceImpl implements IService {
         String post = HttpUtil.post(getQueueCountUrl, map);
         System.out.println("获取排队结果为"+post);
     }
-
 
     void confirm(){
         Map<String,String> map=new HashMap<>();
