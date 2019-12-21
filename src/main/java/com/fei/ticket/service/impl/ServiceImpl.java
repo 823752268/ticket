@@ -42,7 +42,7 @@ public class ServiceImpl implements IService {
     static String confirmUrl="https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue";
     static String useInfo1="O,0,1,杨晓飞,1,4104***********011,13588200025,N,f8f1cce2f52df322ab41bd39052f6849b0a0cf1009f8ed97d61d21b1822636d69fe255753290b9a5feb646b5eb082827";
     static String useInfo2="杨晓飞,1,4104***********011,1_";
-    String who="";
+    String who="张家明";
     Map<String,String> ticketDetailMap=new HashMap<>();
     String repatToken="";
     JSONObject jsonObject=null;
@@ -51,7 +51,10 @@ public class ServiceImpl implements IService {
 
     @Override
     public BaseResponse<List<String>> getTicketList(GetTicketListRequest request) {
-        String uri="https://kyfw.12306.cn/otn/leftTicket/query?leftTicketDTO.train_date="+request.getDate()+"&leftTicketDTO.from_station="+request.getBegin_sta()+"&leftTicketDTO.to_station="+request.getEnd_sta()+"&purpose_codes=ADULT";
+        String uri="https://kyfw.12306.cn/otn/leftTicket/queryZ?leftTicketDTO.train_date="+request.getDate()+"&leftTicketDTO.from_station="+request.getBegin_sta()+"&leftTicketDTO.to_station="+request.getEnd_sta()+"&purpose_codes=ADULT";
+
+
+
 
         BaseResponse<List<String>> baseResponse=new BaseResponse<>();
         List<String> list=new ArrayList<>();
@@ -80,14 +83,20 @@ public class ServiceImpl implements IService {
         if(StringUtils.isNotBlank(who)){
             getUser();
         }
-        checkOrderInfo(null);
+        Boolean aBoolean = checkOrderInfo(null);
+        if(aBoolean!=false){
+            confirm();
+        }
 //        getQueueCount();
-        confirm();
+
+
+        jsonObject=null;
+        repatToken=null;
         return null;
     }
 
     void getTicketList2(){
-        String uri="https://kyfw.12306.cn/otn/leftTicket/query?leftTicketDTO.train_date=2020-01-08&leftTicketDTO.from_station=HZH&leftTicketDTO.to_station=ZZF&purpose_codes=ADULT";
+        String uri="https://kyfw.12306.cn/otn/leftTicket/queryA?leftTicketDTO.train_date=2020-01-08&leftTicketDTO.from_station=HZH&leftTicketDTO.to_station=ZZF&purpose_codes=ADULT";
 
         List<String> list=new ArrayList<>();
         while(true){
@@ -168,7 +177,7 @@ public class ServiceImpl implements IService {
                 String replace = group.replace("'", "\"");
                 jsonObject = JSONObject.parseObject(replace);
             }
-            if(StringUtils.isNotBlank(repatToken)){
+            if(StringUtils.isNotBlank(repatToken)&&jsonObject!=null){
                 log.info("获取doc成功");
                 return true;
             }
@@ -200,7 +209,7 @@ public class ServiceImpl implements IService {
         log.info("获取客结果:{}",jsonArray.toString());
     }
 
-    void checkOrderInfo(JSONObject user){
+    Boolean checkOrderInfo(JSONObject user){
         Map<String,String> map=new HashMap<>();
         map.put("cancel_flag","2");
         map.put("bed_level_order_num","000000000000000000000000000000");
@@ -216,13 +225,13 @@ public class ServiceImpl implements IService {
             if(StringUtils.isNotBlank(post)){
                 JSONObject jsonObject = JSONObject.parseObject(post);
                 Boolean aBoolean = jsonObject.getJSONObject("data").getBoolean("submitStatus");
-                if(aBoolean==true){
                     log.info("检查订单信息为:{}",post);
-                }
+                return aBoolean;
             }
         }catch (Exception e){
 
         }
+        return false;
 
     }
 
